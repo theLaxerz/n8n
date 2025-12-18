@@ -1,0 +1,223 @@
+{
+  "name": "Agent Swarm Research (100 -> 10 -> 1)",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "trigger",
+      "name": "Start",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = [];\nfor(let i=0; i<100; i++) {\n  items.push({ json: { topic: `Topic ${i+1}` } });\n}\nreturn items;"
+      },
+      "id": "gen_100",
+      "name": "Generate 100 Topics",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        200,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "text": "Research {{ $json.topic }}. Use Web Crawler.",
+        "options": {}
+      },
+      "id": "agent_research",
+      "name": "Research Agent",
+      "type": "agent",
+      "typeVersion": 1,
+      "position": [
+        400,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "proxy": "socks5://localhost:9050"
+      },
+      "id": "crawler",
+      "name": "Web Crawler",
+      "type": "toolWebCrawler",
+      "typeVersion": 1,
+      "position": [
+        400,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "model": "gpt-4"
+      },
+      "id": "llm",
+      "name": "OpenAI Chat Model",
+      "type": "lmChatOpenAi",
+      "typeVersion": 1,
+      "position": [
+        400,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const batchSize = 10;\nconst batches = [];\n// items is all inputs from previous node\nfor (let i = 0; i < items.length; i += batchSize) {\n    const batch = items.slice(i, i + batchSize);\n    const combined = batch.map(item => item.json.output).join('\\n---\\n');\n    batches.push({ json: { batch_content: combined, batch_id: (i/batchSize)+1 } });\n}\nreturn batches;"
+      },
+      "id": "group_10",
+      "name": "Group into 10 Batches",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        600,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "text": "Summarize these research findings into a section for the report.\n\nFindings:\n{{ $json.batch_content }}",
+        "options": {}
+      },
+      "id": "agent_section",
+      "name": "Section Compiler",
+      "type": "agent",
+      "typeVersion": 1,
+      "position": [
+        800,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const sections = items.map(item => item.json.output).join('\\n\\n');\nreturn [{ json: { full_content: sections } }];"
+      },
+      "id": "agg_final",
+      "name": "Aggregate Sections",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        1000,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "text": "Compile the final report from these sections:\n\n{{ $json.full_content }}",
+        "options": {}
+      },
+      "id": "agent_final",
+      "name": "Final Compiler",
+      "type": "agent",
+      "typeVersion": 1,
+      "position": [
+        1200,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Start": {
+      "main": [
+        [
+          {
+            "node": "Generate 100 Topics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate 100 Topics": {
+      "main": [
+        [
+          {
+            "node": "Research Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Web Crawler": {
+      "ai_tool": [
+        [
+          {
+            "node": "Research Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_language_model": [
+        [
+          {
+            "node": "Research Agent",
+            "type": "ai_language_model",
+            "index": 0
+          },
+          {
+            "node": "Section Compiler",
+            "type": "ai_language_model",
+            "index": 0
+          },
+          {
+            "node": "Final Compiler",
+            "type": "ai_language_model",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Research Agent": {
+      "main": [
+        [
+          {
+            "node": "Group into 10 Batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Group into 10 Batches": {
+      "main": [
+        [
+          {
+            "node": "Section Compiler",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Section Compiler": {
+      "main": [
+        [
+          {
+            "node": "Aggregate Sections",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate Sections": {
+      "main": [
+        [
+          {
+            "node": "Final Compiler",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
