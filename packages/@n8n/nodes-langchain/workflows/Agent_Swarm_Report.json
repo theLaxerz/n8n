@@ -1,5 +1,5 @@
 {
-  "name": "Agent Swarm Research (100 -> 10 -> 1)",
+  "name": "Autonomous Agent Swarm Research",
   "nodes": [
     {
       "parameters": {},
@@ -7,63 +7,68 @@
       "name": "Start",
       "type": "n8n-nodes-base.manualTrigger",
       "typeVersion": 1,
-      "position": [
-        0,
-        0
-      ]
+      "position": [0, 0]
     },
     {
       "parameters": {
-        "jsCode": "const items = [];\nfor(let i=0; i<100; i++) {\n  items.push({ json: { topic: `Topic ${i+1}` } });\n}\nreturn items;"
+        "text": "Generate a list of 100 diverse and advanced research topics in science, math, and technology (e.g. 'Quantum Computing', 'CRISPR', 'Dark Matter', 'Riemann Hypothesis'). Return them as a strict JSON array of strings: [\"topic1\", \"topic2\"]. Do not include any other text or markdown formatting.",
+        "options": {}
       },
-      "id": "gen_100",
-      "name": "Generate 100 Topics",
+      "id": "agent_brainstorm",
+      "name": "Brainstorm Agent",
+      "type": "agent",
+      "typeVersion": 1,
+      "position": [200, 0]
+    },
+    {
+      "parameters": {
+        "model": "gpt-4"
+      },
+      "id": "llm_brainstorm",
+      "name": "OpenAI Chat Model",
+      "type": "lmChatOpenAi",
+      "typeVersion": 1,
+      "position": [200, 250]
+    },
+    {
+      "parameters": {
+        "jsCode": "const text = items[0].json.output;\nlet topics = [];\ntry {\n  const match = text.match(/\\[.*\\]/s);\n  if (match) {\n      topics = JSON.parse(match[0]);\n  }\n} catch(e) {}\nif (topics.length === 0) topics = [\"Failed to generate topics\"];\nreturn topics.map(t => ({ json: { topic: t } }));"
+      },
+      "id": "splitter",
+      "name": "Split Topics",
       "type": "n8n-nodes-base.code",
       "typeVersion": 1,
-      "position": [
-        200,
-        0
-      ]
+      "position": [400, 0]
     },
     {
       "parameters": {
-        "text": "Research {{ $json.topic }}. Use Web Crawler.",
+        "text": "Research the topic: {{ $json.topic }}. \n1. Use Search to find relevant, high-quality websites.\n2. Use Web Crawler to explore those sites (you can set depth=1 to follow links).\n3. Synthesize the findings.",
         "options": {}
       },
       "id": "agent_research",
       "name": "Research Agent",
       "type": "agent",
       "typeVersion": 1,
-      "position": [
-        400,
-        0
-      ]
+      "position": [600, 0]
     },
     {
       "parameters": {
-        "proxy": "socks5://localhost:9050"
+        "proxy": "socks5://localhost:9050",
+        "maxPages": 10
       },
       "id": "crawler",
       "name": "Web Crawler",
       "type": "toolWebCrawler",
       "typeVersion": 1,
-      "position": [
-        400,
-        200
-      ]
+      "position": [600, 200]
     },
     {
-      "parameters": {
-        "model": "gpt-4"
-      },
-      "id": "llm",
-      "name": "OpenAI Chat Model",
-      "type": "lmChatOpenAi",
+      "parameters": {},
+      "id": "serp",
+      "name": "SerpAPI",
+      "type": "toolSerpApi",
       "typeVersion": 1,
-      "position": [
-        400,
-        400
-      ]
+      "position": [600, 300]
     },
     {
       "parameters": {
@@ -73,24 +78,18 @@
       "name": "Group into 10 Batches",
       "type": "n8n-nodes-base.code",
       "typeVersion": 1,
-      "position": [
-        600,
-        0
-      ]
+      "position": [800, 0]
     },
     {
       "parameters": {
-        "text": "Summarize these research findings into a section for the report.\n\nFindings:\n{{ $json.batch_content }}",
+        "text": "Summarize these research findings into a comprehensive section.\n\nFindings:\n{{ $json.batch_content }}",
         "options": {}
       },
       "id": "agent_section",
       "name": "Section Compiler",
       "type": "agent",
       "typeVersion": 1,
-      "position": [
-        800,
-        0
-      ]
+      "position": [1000, 0]
     },
     {
       "parameters": {
@@ -100,24 +99,18 @@
       "name": "Aggregate Sections",
       "type": "n8n-nodes-base.code",
       "typeVersion": 1,
-      "position": [
-        1000,
-        0
-      ]
+      "position": [1200, 0]
     },
     {
       "parameters": {
-        "text": "Compile the final report from these sections:\n\n{{ $json.full_content }}",
+        "text": "Compile the final 5-25 page report from these sections. Ensure full citations.",
         "options": {}
       },
       "id": "agent_final",
       "name": "Final Compiler",
       "type": "agent",
       "typeVersion": 1,
-      "position": [
-        1200,
-        0
-      ]
+      "position": [1400, 0]
     }
   ],
   "connections": {
@@ -125,30 +118,19 @@
       "main": [
         [
           {
-            "node": "Generate 100 Topics",
+            "node": "Brainstorm Agent",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Generate 100 Topics": {
+    "Brainstorm Agent": {
       "main": [
         [
           {
-            "node": "Research Agent",
+            "node": "Split Topics",
             "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Web Crawler": {
-      "ai_tool": [
-        [
-          {
-            "node": "Research Agent",
-            "type": "ai_tool",
             "index": 0
           }
         ]
@@ -157,6 +139,11 @@
     "OpenAI Chat Model": {
       "ai_language_model": [
         [
+          {
+            "node": "Brainstorm Agent",
+            "type": "ai_language_model",
+            "index": 0
+          },
           {
             "node": "Research Agent",
             "type": "ai_language_model",
@@ -175,12 +162,45 @@
         ]
       ]
     },
+    "Split Topics": {
+      "main": [
+        [
+          {
+            "node": "Research Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "Research Agent": {
       "main": [
         [
           {
             "node": "Group into 10 Batches",
             "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Web Crawler": {
+      "ai_tool": [
+        [
+          {
+            "node": "Research Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SerpAPI": {
+      "ai_tool": [
+        [
+          {
+            "node": "Research Agent",
+            "type": "ai_tool",
             "index": 0
           }
         ]

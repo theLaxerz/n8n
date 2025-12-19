@@ -12,6 +12,7 @@ describe('ToolWebCrawler', () => {
 		const node = new ToolWebCrawler();
 		const mockSupplyDataFunctions = mock<ISupplyDataFunctions>();
 		mockSupplyDataFunctions.getNodeParameter.calledWith('proxy', 0, '').mockReturnValue('');
+        mockSupplyDataFunctions.getNodeParameter.calledWith('maxPages', 0, 5).mockReturnValue(5);
 
 		const result = await node.supplyData.call(mockSupplyDataFunctions, 0);
 		expect(result.response).toBeDefined();
