@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agent Swarm Research System - How To Guide</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+        header {
+            background: #ff6b6b;
+            color: white;
+            padding: 2rem;
+            border-radius: 8px 8px 0 0;
+            text-align: center;
+        }
+        h1 { margin: 0; }
+        .container {
+            background: white;
+            padding: 2rem;
+            border-radius: 0 0 8px 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h2 {
+            color: #ff6b6b;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+            margin-top: 2rem;
+        }
+        h3 { color: #555; }
+        code {
+            background: #f4f4f4;
+            padding: 2px 5px;
+            border-radius: 4px;
+            font-family: monospace;
+            color: #d63384;
+        }
+        pre {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        .note {
+            background: #e7f5ff;
+            border-left: 4px solid #339af0;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .warning {
+            background: #fff5f5;
+            border-left: 4px solid #ff8787;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        li { margin-bottom: 10px; }
+        img { max-width: 100%; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Agent Swarm Research System</h1>
+        <p>Autonomous Multi-Agent Web Research & Reporting</p>
+    </header>
+
+    <div class="container">
+        <section id="overview">
+            <h2>Overview</h2>
+            <p>
+                This application deploys a "swarm" of autonomous AI agents to conduct extensive research on advanced topics.
+                It leverages a custom <strong>Web Crawler</strong> tool capable of navigating the open web and the dark web (via Tor),
+                ensuring comprehensive data collection.
+            </p>
+            <p><strong>Workflow Stages:</strong></p>
+            <ol>
+                <li><strong>Brainstorming:</strong> An agent autonomously generates 100 unique research topics.</li>
+                <li><strong>Research Swarm:</strong> 100 agents run in parallel (or batched) to search (SerpAPI) and crawl (Web Crawler) for information.</li>
+                <li><strong>Synthesis:</strong> Findings are grouped into batches of 10 and summarized by intermediate "Section Compiler" agents.</li>
+                <li><strong>Reporting:</strong> A "Final Compiler" agent aggregates all sections into a detailed 5-25 page report with citations.</li>
+            </ol>
+        </section>
+
+        <section id="prerequisites">
+            <h2>Prerequisites</h2>
+            <ul>
+                <li><strong>n8n Instance:</strong> Running the latest version with this custom build (including <code>ToolWebCrawler</code>).</li>
+                <li><strong>OpenAI API Key:</strong> For the GPT-4 agents.</li>
+                <li><strong>SerpAPI Key:</strong> For Google Search capabilities.</li>
+                <li><strong>(Optional) Tor Proxy:</strong> If you intend to crawl <code>.onion</code> sites or need anonymity.</li>
+            </ul>
+        </section>
+
+        <section id="setup">
+            <h2>Setup Guide</h2>
+
+            <h3>1. Import the Workflow</h3>
+            <p>
+                The workflow file is located at:
+                <code>packages/@n8n/nodes-langchain/workflows/Agent_Swarm_Report.json</code>.
+            </p>
+            <ol>
+                <li>Open your n8n Editor.</li>
+                <li>Go to <strong>Workflows</strong> &gt; <strong>Import from File</strong>.</li>
+                <li>Select the JSON file mentioned above.</li>
+            </ol>
+
+            <h3>2. Configure Credentials</h3>
+            <p>You need to set up credentials for the agents to work:</p>
+            <ul>
+                <li><strong>OpenAI:</strong> Open the "OpenAI Chat Model" node and select/create your OpenAI credentials.</li>
+                <li><strong>SerpAPI:</strong> Open the "SerpAPI" node and enter your API key.</li>
+            </ul>
+
+            <h3>3. Configure the Crawler (Dark Web Support)</h3>
+            <p>The <strong>Web Crawler</strong> node allows you to specify a proxy.</p>
+            <div class="note">
+                <strong>For Dark Web Access:</strong> Ensure you have a Tor SOCKS5 proxy running locally (usually on port 9050).
+            </div>
+            <ol>
+                <li>Open the <strong>Web Crawler</strong> node settings.</li>
+                <li>In the <strong>Proxy URL</strong> field, enter your SOCKS5 proxy:
+                    <br><code>socks5://127.0.0.1:9050</code> (Adjust IP/Port if needed).
+                </li>
+                <li>Set <strong>Max Pages per Crawl</strong> (Default: 5). Increase this for deeper research, but be more mindful of execution time.</li>
+            </ol>
+        </section>
+
+        <section id="running">
+            <h2>Running the Research</h2>
+            <p>
+                Click <strong>Execute Workflow</strong>. The process follows this timeline:
+            </p>
+            <ul>
+                <li><strong>0-1 min:</strong> Brainstorming Agent generates 100 topics.</li>
+                <li><strong>1-10 mins:</strong> The Research Swarm activates. You will see execution indicators for the "Research Agent". It uses Search to find URLs and the Crawler to read them.</li>
+                <li><strong>10-12 mins:</strong> The "Section Compiler" agents summarize the findings.</li>
+                <li><strong>Final:</strong> The "Final Compiler" outputs the complete report.</li>
+            </ul>
+            <div class="warning">
+                <strong>Resource Warning:</strong> Running 100 GPT-4 agents can be token-intensive and costly. Ensure your API limits are sufficient.
+            </div>
+        </section>
+
+        <section id="troubleshooting">
+            <h2>Troubleshooting</h2>
+            <ul>
+                <li><strong>Crawler Timeout:</strong> If the crawler hangs, reduce "Max Pages per Crawl" or check your proxy connection.</li>
+                <li><strong>Proxy Errors:</strong> If using SOCKS5, ensure the protocol is specified as <code>socks5://</code>.</li>
+                <li><strong>Rate Limits:</strong> If OpenAI or SerpAPI rate limits are hit, n8n may pause or fail. Consider adding "Wait" nodes or reducing the swarm size (edit the "Brainstorm Agent" prompt to ask for fewer topics).</li>
+            </ul>
+        </section>
+    </div>
+</body>
+</html>
